@@ -9,6 +9,7 @@ let lastScanned = {};
 let decoding = false;
 let interval;
 let cameras = [];
+let facingMode = 'environment'; // Start with back camera
 
 async function init() {
     if (!('BarcodeDetector' in window)) {
@@ -51,12 +52,18 @@ async function populateCameraDropdown() {
 async function startCamera() {
     try {
         const constraints = {
-            video: {
-                deviceId: cameraDropdown.value ? { exact: cameraDropdown.value } : undefined
-            }
+            video: cameraDropdown.value ? { deviceId: { exact: cameraDropdown.value } } : { facingMode: facingMode }
         };
         stream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = stream;
+        // Update dropdown to reflect the current device
+        const track = stream.getVideoTracks()[0];
+        const settings = track.getSettings();
+        const deviceId = settings.deviceId;
+        const index = cameras.findIndex(cam => cam.deviceId === deviceId);
+        if (index !== -1) {
+            cameraDropdown.selectedIndex = index;
+        }
         video.onloadeddata = startDetecting;
     } catch (e) {
         statusDiv.textContent = 'Error accessing camera: ' + e.message;
@@ -69,10 +76,9 @@ cameraDropdown.addEventListener('change', async () => {
 });
 
 flipButton.addEventListener('click', () => {
-    const currentIndex = cameraDropdown.selectedIndex;
-    const nextIndex = (currentIndex + 1) % cameras.length;
-    cameraDropdown.selectedIndex = nextIndex;
-    cameraDropdown.dispatchEvent(new Event('change'));
+    facingMode = facingMode === 'user' ? 'environment' : 'user';
+    stop();
+    startCamera();
 });
 
 function stop() {
