@@ -13,7 +13,7 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 )
 
-//go:embed static/*
+//go:embed index.html script.js style.css
 var staticFS embed.FS
 
 func main() {
