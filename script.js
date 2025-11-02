@@ -94,7 +94,7 @@ function stop() {
 
 function startDetecting() {
     clearInterval(interval);
-    interval = setInterval(detect, 100);
+    interval = setInterval(detect, 40);
     statusDiv.textContent = '';
 }
 
