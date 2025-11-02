@@ -19,6 +19,7 @@ async function init() {
 
     try {
         const formats = await BarcodeDetector.getSupportedFormats();
+        console.log("Supported barcode formats:", formats)
         if (formats.length === 0) {
             statusDiv.textContent = 'No barcode formats supported.';
             return;
