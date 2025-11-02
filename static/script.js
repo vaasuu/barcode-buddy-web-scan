@@ -2,6 +2,7 @@ const video = document.getElementById('video');
 const cameraDropdown = document.getElementById('camera-dropdown');
 const flipButton = document.getElementById('flip-camera');
 const statusDiv = document.getElementById('status');
+const progressBar = document.getElementById('progress-bar');
 
 let stream;
 let barcodeDetector;
@@ -10,6 +11,8 @@ let decoding = false;
 let interval;
 let cameras = [];
 let facingMode = 'environment'; // Start with back camera
+
+const SCAN_COOLDOWN = 3000;
 
 async function init() {
     if (!('BarcodeDetector' in window)) {
@@ -109,10 +112,20 @@ async function detect() {
         for (const barcode of barcodes) {
             const code = barcode.rawValue;
             const now = Date.now();
-            if (!lastScanned[code] || now - lastScanned[code] > 3000) {
+            if (!lastScanned[code] || now - lastScanned[code] > SCAN_COOLDOWN) {
                 lastScanned[code] = now;
                 await postScan(code);
                 statusDiv.textContent = `Scanned: ${code}`;
+                statusDiv.style.opacity = '1';
+                progressBar.style.transition = 'none';
+                progressBar.style.width = '100%';
+                setTimeout(() => {
+                    progressBar.style.transition = `width ${SCAN_COOLDOWN / 1000}s ease-out`;
+                    progressBar.style.width = '0%';
+                }, 10);
+                setTimeout(() => {
+                    statusDiv.style.opacity = '0';
+                }, SCAN_COOLDOWN);
             }
         }
     } catch (e) {

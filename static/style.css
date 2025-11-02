@@ -22,4 +22,14 @@ button {
 #status {
     margin-top: 20px;
     font-weight: bold;
+    transition: opacity 0.2s ease-out;
 }
+
+#progress-bar {
+    width: 0;
+    height: 10px;
+    background-color: #4CAF50;
+    margin: 10px auto;
+    max-width: 640px;
+}
+
