@@ -1,5 +1,6 @@
 const video = document.getElementById('video');
 const cameraDropdown = document.getElementById('camera-dropdown');
+const flipButton = document.getElementById('flip-camera');
 const statusDiv = document.getElementById('status');
 
 let stream;
@@ -7,6 +8,7 @@ let barcodeDetector;
 let lastScanned = {};
 let decoding = false;
 let interval;
+let cameras = [];
 
 async function init() {
     if (!('BarcodeDetector' in window)) {
@@ -34,10 +36,11 @@ async function populateCameraDropdown() {
     try {
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = devices.filter(device => device.kind === 'videoinput');
-        videoDevices.forEach(device => {
+        cameras = videoDevices;
+        videoDevices.forEach((device, index) => {
             const option = document.createElement('option');
             option.value = device.deviceId;
-            option.text = device.label || `Camera ${cameraDropdown.length + 1}`;
+            option.text = device.label || `Camera ${index + 1}`;
             cameraDropdown.appendChild(option);
         });
     } catch (e) {
@@ -63,6 +66,13 @@ async function startCamera() {
 cameraDropdown.addEventListener('change', async () => {
     stop();
     await startCamera();
+});
+
+flipButton.addEventListener('click', () => {
+    const currentIndex = cameraDropdown.selectedIndex;
+    const nextIndex = (currentIndex + 1) % cameras.length;
+    cameraDropdown.selectedIndex = nextIndex;
+    cameraDropdown.dispatchEvent(new Event('change'));
 });
 
 function stop() {
