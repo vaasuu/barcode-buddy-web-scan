@@ -91,6 +91,7 @@ function stop() {
 function startDetecting() {
     clearInterval(interval);
     interval = setInterval(detect, 1000);
+    statusDiv.textContent = '';
 }
 
 async function detect() {
