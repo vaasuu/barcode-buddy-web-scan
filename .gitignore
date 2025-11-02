@@ -1,3 +1,4 @@
 .DS_Store
 main
 barcode-buddy-web-scan
+.env
