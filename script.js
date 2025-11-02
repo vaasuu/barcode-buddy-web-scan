@@ -114,6 +114,7 @@ async function detect() {
             const now = Date.now();
             if (!lastScanned[code] || now - lastScanned[code] > SCAN_COOLDOWN) {
                 lastScanned[code] = now;
+                playBeep();
                 await postScan(code);
                 statusDiv.textContent = `Scanned: ${code}`;
                 statusDiv.style.opacity = '1';
@@ -133,6 +134,24 @@ async function detect() {
     }
 
     decoding = false;
+}
+
+function playBeep() {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.frequency.setValueAtTime(800, audioContext.currentTime); // Frequency in Hz
+    oscillator.type = 'square';
+
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.2);
 }
 
 async function postScan(barcode) {
