@@ -132,11 +132,12 @@ async function detect() {
                 statusDiv.textContent = `Scanned: ${code}`;
                 statusDiv.style.opacity = '1';
                 progressBar.style.transition = 'none';
-                progressBar.style.width = '100%';
-                setTimeout(() => {
-                    progressBar.style.transition = `width ${SCAN_COOLDOWN / 1000}s ease-out`;
-                    progressBar.style.width = '0%';
-                }, 10);
+                progressBar.style.transform = 'scaleX(1)';
+                progressBar.style.opacity = '1';
+                requestAnimationFrame(() => {
+                    progressBar.style.transition = `transform ${SCAN_COOLDOWN / 1000}s ease-out, opacity 0.3s ease-out`;
+                    progressBar.style.transform = 'scaleX(0)';
+                });
                 setTimeout(() => {
                     statusDiv.style.opacity = '0';
                 }, SCAN_COOLDOWN);
