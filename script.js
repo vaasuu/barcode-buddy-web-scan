@@ -124,11 +124,6 @@ async function detect() {
             if (!lastScanned[code] || now - lastScanned[code] > SCAN_COOLDOWN) {
                 lastScanned[code] = now;
                 playBeep();
-                if (detailedModeCheckbox.checked) {
-                    showModal(code);
-                } else {
-                    await postScan(code);
-                }
                 statusDiv.textContent = `Scanned: ${code}`;
                 statusDiv.style.opacity = '1';
                 progressBar.style.transition = 'none';
@@ -141,6 +136,11 @@ async function detect() {
                 setTimeout(() => {
                     statusDiv.style.opacity = '0';
                 }, SCAN_COOLDOWN);
+                if (detailedModeCheckbox.checked) {
+                    showModal(code);
+                } else {
+                    await postScan(code);
+                }
             }
         }
     } catch (e) {
