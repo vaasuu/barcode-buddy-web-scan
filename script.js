@@ -1,5 +1,6 @@
 const video = document.getElementById('video');
 const cameraDropdown = document.getElementById('camera-dropdown');
+const modeDropdown = document.getElementById('mode-dropdown');
 const flipButton = document.getElementById('flip-camera');
 const statusDiv = document.getElementById('status');
 const progressBar = document.getElementById('progress-bar');
@@ -43,6 +44,7 @@ async function init() {
     }
 
     await populateCameraDropdown();
+    await fetchCurrentMode();
     await startCamera();
 }
 
@@ -59,6 +61,20 @@ async function populateCameraDropdown() {
         });
     } catch (e) {
         console.error('Error enumerating devices:', e);
+    }
+}
+
+async function fetchCurrentMode() {
+    try {
+        const response = await fetch('/api/state/getmode');
+        if (response.ok) {
+            const data = await response.json();
+            if (data[0]?.data?.mode !== undefined) {
+                modeDropdown.value = data[0].data.mode.toString();
+            }
+        }
+    } catch (e) {
+        console.error('Error fetching current mode:', e);
     }
 }
 
@@ -86,6 +102,23 @@ async function startCamera() {
 cameraDropdown.addEventListener('change', async () => {
     stop();
     await startCamera();
+});
+
+modeDropdown.addEventListener('change', async () => {
+    const mode = parseInt(modeDropdown.value, 10);
+    try {
+        const params = new URLSearchParams({ state: mode });
+        const response = await fetch('/api/state/setmode', {
+            method: 'POST',
+            body: params
+        });
+        if (!response.ok) {
+            const data = await response.json();
+            statusDiv.textContent = 'Error setting mode: ' + (data.result?.result || 'Unknown error');
+        }
+    } catch (e) {
+        statusDiv.textContent = 'Error setting mode: ' + e.message;
+    }
 });
 
 flipButton.addEventListener('click', () => {
