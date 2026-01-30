@@ -3,6 +3,14 @@ const cameraDropdown = document.getElementById('camera-dropdown');
 const flipButton = document.getElementById('flip-camera');
 const statusDiv = document.getElementById('status');
 const progressBar = document.getElementById('progress-bar');
+const detailedModeCheckbox = document.getElementById('detailed-mode');
+const modal = document.getElementById('modal');
+const modalBarcode = document.getElementById('modal-barcode');
+const priceInput = document.getElementById('price-input');
+const dateInput = document.getElementById('date-input');
+const cancelBtn = document.getElementById('cancel-btn');
+const submitBtn = document.getElementById('submit-btn');
+const modalError = document.getElementById('modal-error');
 
 let stream;
 let barcodeDetector;
@@ -11,6 +19,7 @@ let decoding = false;
 let interval;
 let cameras = [];
 let facingMode = 'environment'; // Start with back camera
+let pendingBarcode = null;
 
 const SCAN_COOLDOWN = 3000;
 
@@ -115,7 +124,11 @@ async function detect() {
             if (!lastScanned[code] || now - lastScanned[code] > SCAN_COOLDOWN) {
                 lastScanned[code] = now;
                 playBeep();
-                await postScan(code);
+                if (detailedModeCheckbox.checked) {
+                    showModal(code);
+                } else {
+                    await postScan(code);
+                }
                 statusDiv.textContent = `Scanned: ${code}`;
                 statusDiv.style.opacity = '1';
                 progressBar.style.transition = 'none';
@@ -154,11 +167,18 @@ function playBeep() {
     oscillator.stop(audioContext.currentTime + 0.2);
 }
 
-async function postScan(barcode) {
+async function postScan(barcode, price = null, bestBeforeInDays = null) {
     try {
+        const params = new URLSearchParams({ barcode });
+        if (price !== null) {
+            params.append('price', price);
+        }
+        if (bestBeforeInDays !== null) {
+            params.append('bestBeforeInDays', bestBeforeInDays);
+        }
         const response = await fetch('/api/scan', {
             method: 'POST',
-            body: new URLSearchParams({ barcode })
+            body: params
         });
         if (!response.ok) {
             throw new Error('Scan failed');
@@ -167,5 +187,81 @@ async function postScan(barcode) {
         statusDiv.textContent = 'Error posting scan: ' + e.message;
     }
 }
+
+function showModal(barcode) {
+    pendingBarcode = barcode;
+    modalBarcode.textContent = barcode;
+    priceInput.value = '';
+    dateInput.value = '';
+    modalError.textContent = '';
+    modal.style.display = 'flex';
+    clearInterval(interval);
+}
+
+function hideModal() {
+    modal.style.display = 'none';
+    pendingBarcode = null;
+    interval = setInterval(detect, 40);
+}
+
+function getTodayString() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function calculateDaysFromToday(dateString) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selectedDate = new Date(dateString);
+    selectedDate.setHours(0, 0, 0, 0);
+    const diffTime = selectedDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+}
+
+function validateInputs() {
+    const price = priceInput.value;
+    const date = dateInput.value;
+    
+    if (price && parseFloat(price) <= 0) {
+        modalError.textContent = 'Price must be greater than 0';
+        return false;
+    }
+    
+    if (date) {
+        const today = getTodayString();
+        if (date < today) {
+            modalError.textContent = 'Date must be today or in the future';
+            return false;
+        }
+    }
+    
+    modalError.textContent = '';
+    return true;
+}
+
+cancelBtn.addEventListener('click', () => {
+    hideModal();
+});
+
+submitBtn.addEventListener('click', async () => {
+    if (!validateInputs()) {
+        return;
+    }
+    
+    const price = priceInput.value ? parseFloat(priceInput.value) : null;
+    const date = dateInput.value;
+    let bestBeforeInDays = null;
+    
+    if (date) {
+        bestBeforeInDays = calculateDaysFromToday(date);
+    }
+    
+    await postScan(pendingBarcode, price, bestBeforeInDays);
+    hideModal();
+});
 
 init();
