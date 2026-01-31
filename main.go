@@ -47,7 +47,11 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Missing barcode", http.StatusBadRequest)
 		return
 	}
-	log.Printf("Received barcode: %s", barcode)
+
+	price := r.FormValue("price")
+	bestBeforeInDays := r.FormValue("bestBeforeInDays")
+
+	log.Printf("Received barcode: %s, price: %s, bestBeforeInDays: %s", barcode, price, bestBeforeInDays)
 
 	host := os.Getenv("BBUDDY_HOST")
 	apiKey := os.Getenv("BBUDDY_API_KEY")
@@ -62,6 +66,12 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 	var b bytes.Buffer
 	writer := multipart.NewWriter(&b)
 	writer.WriteField("barcode", barcode)
+	if price != "" {
+		writer.WriteField("price", price)
+	}
+	if bestBeforeInDays != "" {
+		writer.WriteField("bestBeforeInDays", bestBeforeInDays)
+	}
 	writer.Close()
 
 	req, err := http.NewRequest(http.MethodPost, url, &b)
